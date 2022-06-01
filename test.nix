@@ -31,11 +31,6 @@ pkgs.nixosTest {
     gitea.wait_for_unit("drone-gitea")
 
     with subtest("API is running"):
-      gitea.sleep(10)
-      [ _, out ] = gitea.execute("journalctl -u drone-gitea")
-      print(out)
-      [ _, out] = gitea.execute('curl "${protocol}://${host}:${toString port}"')
-      print(out)
       gitea.succeed('[ $(curl -Lso /dev/null -w "%{http_code}" "${protocol}://${host}:${toString port}") -eq 200 ]')
   '';
 }
