@@ -1,3 +1,8 @@
+{
+  drone-runner-docker,
+  ...
+}:
+
 { config, pkgs, lib, ... }:
 with lib;
 

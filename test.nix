@@ -9,7 +9,9 @@ pkgs.nixosTest {
 
   nodes = {
     gitea = { pkgs, ... }: {
-      imports = [ ./module.nix ];
+      imports = [ (import ./module.nix {
+        drone-runner-docker = pkgs.callPackage ./docker-runner.nix {};
+      })];
 
       servicesx.drone = {
         enable = true;

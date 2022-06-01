@@ -15,7 +15,9 @@
     };
 
     nixosModules = {
-      drone = import ./module.nix;
+      drone = import ./module.nix {
+        drone-runner-docker = self.packages.${system}.drone-runner-docker;
+      };
     };
 
     nixosModule = self.nixosModules.drone;
