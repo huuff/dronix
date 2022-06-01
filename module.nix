@@ -4,6 +4,11 @@ with lib;
 # TODO: Runners
 let
   cfg = config.servicesx.drone;
+  # TODO: How to cleanly separate? drone doesn't support more than one provider for instance, so
+  # if you have various repositories (private gitea, public github for me, for example) then each
+  # one has to be a drone instance. But how should I go about this? these are not "providers" but
+  # full-blown instance, and it comes with duplicated-looking options like "host" and "address".
+  # Maybe I should have a sub-object named "provider" and another named "server"? Or just a "server" containing a "provider"
   providerModule = with types; submodule {
     options = {
       type = mkOption {
@@ -18,11 +23,12 @@ let
         description = "OAuth Client ID";
       };
 
-      server = mkOption {
+      address = mkOption {
         type = str;
         default = null;
         description = "Target server address";
       };
+
 
       clientSecretFile = mkOption {
         type = oneOf [ str path ];
@@ -38,8 +44,14 @@ let
 
       host = mkOption {
         type = str;
-        default = null;
+        default = "localhost";
         description = "Hostname or IP address of the Drone server";
+      };
+
+      port = mkOption {
+        type = int;
+        default = 8080;
+        description = "Port on which the server will run";
       };
 
       # TODO: One for all servers? I won't provide TLS configuration for the Drone instance,
@@ -63,9 +75,10 @@ let
       # TODO: Secrets
       environment = {
         "DRONE_${PROVIDER}_CLIENT_ID" = provider.clientId;
-        "DRONE_${PROVIDER}_SERVER" = provider.server;
+        "DRONE_${PROVIDER}_SERVER" = provider.address;
         "DRONE_SERVER_HOST" = provider.host;
         "DRONE_SERVER_PROTO" = provider.protocol;
+        "DRONE_SERVER_PORT" = toString provider.port;
         };
 
       # TODO: Restart policy
