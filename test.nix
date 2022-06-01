@@ -34,7 +34,7 @@ pkgs.nixosTest {
       gitea.sleep(10)
       [ _, out ] = gitea.execute("journalctl -u drone-gitea")
       print(out)
-      [ _, out] = gitea.execute('curl -Lso /dev/null -w "%{http_code}" "${protocol}://${host}:${toString port}"')
+      [ _, out] = gitea.execute('curl "${protocol}://${host}:${toString port}"')
       print(out)
       gitea.succeed('[ $(curl -Lso /dev/null -w "%{http_code}" "${protocol}://${host}:${toString port}") -eq 200 ]')
   '';

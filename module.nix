@@ -78,7 +78,7 @@ let
         "DRONE_${PROVIDER}_SERVER" = provider.address;
         "DRONE_SERVER_HOST" = provider.host;
         "DRONE_SERVER_PROTO" = provider.protocol;
-        "DRONE_SERVER_PORT" = toString provider.port;
+        "DRONE_SERVER_PORT" = ":${toString provider.port}";
         };
 
       # TODO: Restart policy
