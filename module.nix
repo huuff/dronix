@@ -107,7 +107,18 @@ in
 
     config = mkIf cfg.enable {
       assertions = [
-        { assertion = length ( cfg.providers ) > 0; message = "You must specify at least one provider";}
+        { 
+          assertion = length ( cfg.providers ) > 0;
+          message = "You must specify at least one provider";
+        }
+        {
+          assertion =
+          let
+            portsUsed = map (it: it.port) cfg.providers;
+          in
+            length (unique (portsUsed)) == length (portsUsed);
+          message = "Each provider must use a different port";
+        }
       ]; 
 
       systemd.services = listToAttrs ( map providerModuleToSystemdUnit cfg.providers );
