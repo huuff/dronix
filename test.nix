@@ -28,6 +28,10 @@ pkgs.nixosTest {
             };
 
             rpcSecretFile = "test";
+
+            runners = [
+              { type = "docker"; }
+            ];
           } 
         ];
       };

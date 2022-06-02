@@ -14,6 +14,15 @@ let
   # one has to be a drone instance. But how should I go about this? these are not "providers" but
   # full-blown instance, and it comes with duplicated-looking options like "host" and "address".
   # Maybe I should have a sub-object named "provider" and another named "server"? Or just a "server" containing a "provider"
+  runnerModule = with types; submodule {
+    options = {
+      type = mkOption {
+        type = enum [ "docker" ];
+        default = null;
+        description = "Type of runner, one of 'docker'";
+      };
+    };
+  };
   serverModule = with types; submodule {
     options = {
       provider = {
@@ -66,6 +75,12 @@ let
         type = enum [ "http" "https" ];
         default = "http";
         description = "Protocol of the Drone server";
+      };
+
+      runners = mkOption {
+        type = listOf runnerModule;
+        default = [];
+        description = "Runners that the server will use";
       };
     };
   };
@@ -124,6 +139,10 @@ in
           in
             length (unique (portsUsed)) == length (portsUsed);
           message = "Each server must use a different port";
+        }
+        {
+          assertion = all (it: length (it.runners) > 0) cfg.servers;
+          message = "Every server must have at least one runner";
         }
       ]; 
 
