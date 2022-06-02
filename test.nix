@@ -16,14 +16,17 @@ pkgs.nixosTest {
       servicesx.drone = {
         enable = true;
 
-        providers = [
+        servers = [
           {
             inherit host protocol port;
 
-            type = "gitea";
-            clientId = "test";
-            address = "test";
-            clientSecretFile = "test";
+            provider = {
+              type = "gitea";
+              clientId = "test";
+              address = "test";
+              clientSecretFile = "test";
+            };
+
             rpcSecretFile = "test";
           } 
         ];

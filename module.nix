@@ -14,31 +14,32 @@ let
   # one has to be a drone instance. But how should I go about this? these are not "providers" but
   # full-blown instance, and it comes with duplicated-looking options like "host" and "address".
   # Maybe I should have a sub-object named "provider" and another named "server"? Or just a "server" containing a "provider"
-  providerModule = with types; submodule {
+  serverModule = with types; submodule {
     options = {
-      type = mkOption {
-        type = enum [ "github" "gitea" "gitlab" ];
-        default = null;
-        description = "Type of provider, one of 'github', 'gitea', 'gitlab'";
-      };
+      provider = {
+        type = mkOption {
+          type = enum [ "github" "gitea" "gitlab" ];
+          default = null;
+          description = "Type of provider, one of 'github', 'gitea', 'gitlab'";
+        };
 
-      clientId = mkOption {
-        type = str;
-        default = null;
-        description = "OAuth Client ID";
-      };
+        address = mkOption {
+          type = str;
+          default = null;
+          description = "Target server address";
+        };
 
-      address = mkOption {
-        type = str;
-        default = null;
-        description = "Target server address";
-      };
+        clientId = mkOption {
+          type = str;
+          default = null;
+          description = "OAuth Client ID";
+        };
 
-
-      clientSecretFile = mkOption {
-        type = oneOf [ str path ];
-        default = null;
-        description = "Path to a file containing the OAuth Client Secret";
+        clientSecretFile = mkOption {
+          type = oneOf [ str path ];
+          default = null;
+          description = "Path to a file containing the OAuth Client Secret";
+        };
       };
 
       rpcSecretFile = mkOption {
@@ -69,21 +70,21 @@ let
     };
   };
 
-  providerModuleToSystemdUnit = provider:
+  serverModuleToSystemdUnit = server:
   let
-    PROVIDER = toUpper provider.type;
+    PROVIDER = toUpper server.provider.type;
   in {
-    name = "drone-${provider.type}";
+    name = "drone-${server.provider.type}";
     value = {
-      description = "Drone CI instance for ${provider.type}";
+      description = "Drone CI instance for ${server.provider.type}";
 
       # TODO: Secrets
       environment = {
-        "DRONE_${PROVIDER}_CLIENT_ID" = provider.clientId;
-        "DRONE_${PROVIDER}_SERVER" = provider.address;
-        "DRONE_SERVER_HOST" = provider.host;
-        "DRONE_SERVER_PROTO" = provider.protocol;
-        "DRONE_SERVER_PORT" = ":${toString provider.port}";
+        "DRONE_${PROVIDER}_CLIENT_ID" = server.provider.clientId;
+        "DRONE_${PROVIDER}_SERVER" = server.provider.address;
+        "DRONE_SERVER_HOST" = server.host;
+        "DRONE_SERVER_PROTO" = server.protocol;
+        "DRONE_SERVER_PORT" = ":${toString server.port}";
         };
 
       # TODO: Restart policy
@@ -103,29 +104,29 @@ in
         description = "Drone CI derivation";
       };
 
-      providers = mkOption {
-        type = listOf providerModule;
+      servers = mkOption {
+        type = listOf serverModule;
         default = [];
-        description = "List of enabled providers (each one will be a separate instance)";
+        description = "List of enabled servers (each one will be a separate instance)";
       };
     };
 
     config = mkIf cfg.enable {
       assertions = [
         { 
-          assertion = length ( cfg.providers ) > 0;
-          message = "You must specify at least one provider";
+          assertion = length ( cfg.servers ) > 0;
+          message = "You must specify at least one server";
         }
         {
           assertion =
           let
-            portsUsed = map (it: it.port) cfg.providers;
+            portsUsed = map (it: it.port) cfg.servers;
           in
             length (unique (portsUsed)) == length (portsUsed);
-          message = "Each provider must use a different port";
+          message = "Each server must use a different port";
         }
       ]; 
 
-      systemd.services = listToAttrs ( map providerModuleToSystemdUnit cfg.providers );
+      systemd.services = listToAttrs ( map serverModuleToSystemdUnit cfg.servers );
     };
   }
