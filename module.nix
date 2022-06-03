@@ -122,10 +122,10 @@ let
       };
     };
   };
-  runnerModuleRunnerUnit = serverModule: runnerModule:
+  runnerModuleToRunnerUnit = serverModule: runnerModule:
   let
     runnerPackage = if (runnerModule.type == "docker") 
-        then [ drone-runner-docker ] 
+        then drone-runner-docker  
         else throw "Unsupported runner type ${runnerModule.type}";
   in
   {
@@ -150,6 +150,8 @@ let
       };
     };
   };
+
+  serverModuleToRunnerUnits = serverModule: map (it: runnerModuleToRunnerUnit serverModule it) serverModule.runners;
 in
   {
     options.servicesx.drone = with types; {
@@ -201,7 +203,9 @@ in
       ]; 
 
       systemd = {
-        services = listToAttrs ( map serverModuleToServerUnit cfg.servers );
+        services = listToAttrs (map serverModuleToServerUnit cfg.servers)
+          // listToAttrs (flatten (map serverModuleToRunnerUnits cfg.servers))
+        ;
         tmpfiles.rules = 
         let
           serversUsingSqlite = filter (it: it.database.driver == "sqlite3") cfg.servers;
