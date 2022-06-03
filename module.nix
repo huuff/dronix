@@ -94,7 +94,7 @@ let
     };
   };
 
-  serverModuleToSystemdUnit = server:
+  serverModuleToServerUnit = server:
   let
     PROVIDER = toUpper server.provider.type;
   in {
@@ -115,6 +115,34 @@ let
 
       script = "${cfg.package}/bin/drone-server";
       wantedBy = [ "multi-user.target" ];
+
+      serviceConfig = {
+        Restart = "always";
+        User = cfg.user;
+      };
+    };
+  };
+  runnerModuleRunnerUnit = serverModule: runnerModule:
+  let
+    runnerPackage = if (runnerModule.type == "docker") 
+        then [ drone-runner-docker ] 
+        else throw "Unsupported runner type ${runnerModule.type}";
+  in
+  {
+    name = "drone-runner-${runnerModule.type}";
+    value = {
+      description = "Drone CI runner instance for ${runnerModule.type} and ${serverModule.provider.type}";
+
+      environment = {
+        # TODO: RPC secret
+        "DRONE_RPC_HOST" = "${serverModule.host}:${toString serverModule.port}";
+        "DRONE_RPC_PROTO" = serverModule.protocol;
+      };
+
+      path = [ runnerPackage ];
+      # TODO: Better dependencies among units!
+      wantedBy = [ "multi-user.target" ]; 
+      script = "${runnerPackage}/bin/drone-runner-${runnerModule.type}";
 
       serviceConfig = {
         Restart = "always";
@@ -173,7 +201,7 @@ in
       ]; 
 
       systemd = {
-        services = listToAttrs ( map serverModuleToSystemdUnit cfg.servers );
+        services = listToAttrs ( map serverModuleToServerUnit cfg.servers );
         tmpfiles.rules = 
         let
           serversUsingSqlite = filter (it: it.database.driver == "sqlite3") cfg.servers;
