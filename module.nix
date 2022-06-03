@@ -102,9 +102,13 @@ let
         "DRONE_SERVER_PORT" = ":${toString server.port}";
         };
 
-      # TODO: Restart policy
       script = "${cfg.package}/bin/drone-server";
       wantedBy = [ "multi-user.target" ];
+
+      serviceConfig = {
+        Restart = "always";
+        # TODO: An user
+      };
     };
   };
 in
