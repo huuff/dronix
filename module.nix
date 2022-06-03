@@ -6,7 +6,6 @@
 { config, pkgs, lib, ... }:
 with lib;
 
-# TODO: Runners
 let
   cfg = config.servicesx.drone;
   runnerModule = with types; submodule {
