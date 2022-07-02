@@ -112,7 +112,9 @@ let
         "DRONE_DATABASE_DATASOURCE" = server.database.datasource;
         };
 
-      script = "${cfg.package}/bin/drone-server";
+        script = ''
+          DRONE_RPC_SECRET="$(cat ${server.rpcSecretFile})" ${cfg.package}/bin/drone-server
+        '';
       wantedBy = [ "multi-user.target" ];
 
       serviceConfig = {
@@ -133,7 +135,6 @@ let
       description = "Drone CI runner instance for ${runnerModule.type} and ${serverModule.provider.type}";
 
       environment = {
-        # TODO: RPC secret
         "DRONE_RPC_HOST" = "${serverModule.host}:${toString serverModule.port}";
         "DRONE_RPC_PROTO" = serverModule.protocol;
       };
@@ -141,7 +142,9 @@ let
       path = [ runnerPackage ];
       # TODO: Better dependencies among units!
       wantedBy = [ "multi-user.target" ]; 
-      script = "${runnerPackage}/bin/drone-runner-${runnerModule.type}";
+      script = ''
+        DRONE_RPC_SECRET="$(cat ${serverModule.rpcSecretFile})" ${runnerPackage}/bin/drone-runner-${runnerModule.type}
+      '';
 
       serviceConfig = {
         Restart = "always";

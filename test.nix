@@ -27,7 +27,7 @@ pkgs.nixosTest {
               clientSecretFile = "test";
             };
 
-            rpcSecretFile = "test";
+            rpcSecretFile = pkgs.writeText "rpc-secret" "test";
 
             runners = [
               { type = "docker"; }
