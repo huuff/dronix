@@ -101,7 +101,7 @@ let
     value = {
       description = "Drone CI instance for ${server.provider.type}";
 
-      # TODO: Secrets
+      # TODO: Secrets, Specifically, the client secret, which I just realized I'm not using after spending a couple hours trying to use this module
       environment = {
         "DRONE_${PROVIDER}_CLIENT_ID" = server.provider.clientId;
         "DRONE_${PROVIDER}_SERVER" = server.provider.address;
