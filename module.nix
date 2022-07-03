@@ -8,6 +8,7 @@ with lib;
 
 let
   cfg = config.servicesx.drone;
+  unitEnvFileDir = "/var/lib/drone/sysconfig";
   runnerModule = with types; submodule {
     options = {
       type = mkOption {
@@ -95,32 +96,42 @@ let
 
   serverModuleToServerUnit = server:
   let
-    PROVIDER = toUpper server.provider.type;
+    providerName = server.provider.type;
+    environmentFile = "${unitEnvFileDir}/${providerName}";
   in {
     name = "drone-${server.provider.type}";
     value = {
       description = "Drone CI instance for ${server.provider.type}";
 
-      environment = {
-        "DRONE_${PROVIDER}_CLIENT_ID" = server.provider.clientId;
-        "DRONE_${PROVIDER}_SERVER" = server.provider.address;
-        "DRONE_${PROVIDER}_CLIENT_SECRET" = "$(cat ${server.provider.clientSecretFile})";
-        "DRONE_SERVER_HOST" = server.host;
-        "DRONE_SERVER_PROTO" = server.protocol;
-        "DRONE_SERVER_PORT" = ":${toString server.port}";
-        "DRONE_DATABASE_DRIVER" = server.database.driver;
-        "DRONE_DATABASE_DATASOURCE" = server.database.datasource;
-        "DRONE_RPC_SECRET" = "$(cat ${server.rpcSecretFile})";
-        };
+      preStart =
+        let 
+          createEnvFile = pkgs.writeShellScript "drone-${providerName}-env" ''
+            cat <<EOF | tee ${environmentFile}
+              DRONE_${toUpper providerName}_CLIENT_ID="${server.provider.clientId}"
+              DRONE_${toUpper providerName}_SERVER="${server.provider.address}"
+              DRONE_${toUpper providerName}_CLIENT_SECRET="$(cat ${server.provider.clientSecretFile})"
+              DRONE_SERVER_HOST="${server.host}"
+              DRONE_SERVER_PROTO="${server.protocol}"
+              DRONE_SERVER_PORT=":${toString server.port}"
+              DRONE_DATABASE_DRIVER="${server.database.driver}"
+              DRONE_DATABASE_DATASOURCE="${server.database.datasource}"
+              DRONE_RPC_SECRET="$(cat ${server.rpcSecretFile})"
+            EOF
+            '';
+        in "${createEnvFile}";
+      
 
-        script = ''
-          ${cfg.package}/bin/drone-server
-        '';
+      script = ''
+        ${cfg.package}/bin/drone-server
+      '';
+      bindsTo = [ "systemd-tmpfiles-setup.service" ];
       wantedBy = [ "multi-user.target" ];
 
       serviceConfig = {
         Restart = "always";
         User = cfg.user;
+        # XXX: The `-` prefix means it might not exist yet
+        EnvironmentFile = "-${environmentFile}";
       };
     };
   };
@@ -208,14 +219,17 @@ in
 
       systemd = {
         services = listToAttrs (map serverModuleToServerUnit cfg.servers)
-          // listToAttrs (flatten (map serverModuleToRunnerUnits cfg.servers))
-        ;
+                // listToAttrs (flatten (map serverModuleToRunnerUnits cfg.servers))
+                ;
+
         tmpfiles.rules = 
         let
           serversUsingSqlite = filter (it: it.database.driver == "sqlite3") cfg.servers;
           baseDirs = map (it: dirOf it.database.datasource) serversUsingSqlite;
         in
-          map (databaseDir: "d ${databaseDir} 700 ${cfg.user} ${cfg.group} - -") baseDirs;
+          (map (databaseDir: "d ${databaseDir} 700 ${cfg.user} ${cfg.group} - -") baseDirs)
+          ++ ["d ${unitEnvFileDir} 700 ${cfg.user} ${cfg.group} - -"] 
+        ;
       };
 
       users = {
