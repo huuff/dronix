@@ -137,6 +137,7 @@ let
   };
   runnerModuleToRunnerUnit = serverModule: runnerModule:
   let
+    environmentFile = "${unitEnvFileDir}/runner-${runnerModule.type}";
     runnerPackage = if (runnerModule.type == "docker") 
         then drone-runner-docker  
         else throw "Unsupported runner type ${runnerModule.type}";
@@ -146,15 +147,22 @@ let
     value = {
       description = "Drone CI runner instance for ${runnerModule.type} and ${serverModule.provider.type}";
 
-      environment = {
-        "DRONE_RPC_HOST" = "${serverModule.host}:${toString serverModule.port}";
-        "DRONE_RPC_PROTO" = serverModule.protocol;
-        #"DRONE_RPC_SECRET" = "$(cat ${serverModule.rpcSecretFile})";
-      };
-
       path = [ runnerPackage ];
       # TODO: Better dependencies among units!
+      wants = [ "systemd-tmpfiles-setup.service" ];
       wantedBy = [ "multi-user.target" ]; 
+
+      preStart =
+        let 
+          createEnvFile = pkgs.writeShellScript "drone-runner-${runnerModule.type}-env" ''
+            cat <<EOF | tee ${environmentFile}
+              DRONE_RPC_HOST="${serverModule.host}:${toString serverModule.port}"
+              DRONE_RPC_PROTO="${serverModule.protocol}"
+              DRONE_RPC_SECRET="$(cat ${serverModule.rpcSecretFile})"
+            EOF
+            '';
+        in "${createEnvFile}";
+
       script = ''
         ${runnerPackage}/bin/drone-runner-${runnerModule.type}
       '';
@@ -162,6 +170,7 @@ let
       serviceConfig = {
         Restart = "always";
         User = cfg.user;
+        EnvironmentFile = "-${environmentFile}";
       };
     };
   };
