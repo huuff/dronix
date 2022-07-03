@@ -101,19 +101,20 @@ let
     value = {
       description = "Drone CI instance for ${server.provider.type}";
 
-      # TODO: Secrets, Specifically, the client secret, which I just realized I'm not using after spending a couple hours trying to use this module
       environment = {
         "DRONE_${PROVIDER}_CLIENT_ID" = server.provider.clientId;
         "DRONE_${PROVIDER}_SERVER" = server.provider.address;
+        "DRONE_${PROVIDER}_CLIENT_SECRET" = "$(cat ${server.provider.clientSecretFile})";
         "DRONE_SERVER_HOST" = server.host;
         "DRONE_SERVER_PROTO" = server.protocol;
         "DRONE_SERVER_PORT" = ":${toString server.port}";
         "DRONE_DATABASE_DRIVER" = server.database.driver;
         "DRONE_DATABASE_DATASOURCE" = server.database.datasource;
+        "DRONE_RPC_SECRET" = "$(cat ${server.rpcSecretFile})";
         };
 
         script = ''
-          DRONE_RPC_SECRET="$(cat ${server.rpcSecretFile})" ${cfg.package}/bin/drone-server
+          ${cfg.package}/bin/drone-server
         '';
       wantedBy = [ "multi-user.target" ];
 
@@ -137,13 +138,14 @@ let
       environment = {
         "DRONE_RPC_HOST" = "${serverModule.host}:${toString serverModule.port}";
         "DRONE_RPC_PROTO" = serverModule.protocol;
+        #"DRONE_RPC_SECRET" = "$(cat ${serverModule.rpcSecretFile})";
       };
 
       path = [ runnerPackage ];
       # TODO: Better dependencies among units!
       wantedBy = [ "multi-user.target" ]; 
       script = ''
-        DRONE_RPC_SECRET="$(cat ${serverModule.rpcSecretFile})" ${runnerPackage}/bin/drone-runner-${runnerModule.type}
+        ${runnerPackage}/bin/drone-runner-${runnerModule.type}
       '';
 
       serviceConfig = {

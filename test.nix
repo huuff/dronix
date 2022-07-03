@@ -24,7 +24,7 @@ pkgs.nixosTest {
               type = "gitea";
               clientId = "test";
               address = "test";
-              clientSecretFile = "test";
+              clientSecretFile = pkgs.writeText "client-secret" "test";
             };
 
             rpcSecretFile = pkgs.writeText "rpc-secret" "test";

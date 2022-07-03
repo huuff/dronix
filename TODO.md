@@ -3,3 +3,4 @@
 * `mysql` and `postgresql`
 * Autogenerating the shared secret?
 * Also, am I even connecting the runners with the server?
+* Also I need to connect the docker runner to the docker daemon
