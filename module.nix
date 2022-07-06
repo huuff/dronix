@@ -143,7 +143,7 @@ let
         else throw "Unsupported runner type ${runnerModule.type}";
   in
   {
-    name = "drone-runner-${runnerModule.type}";
+    name = "drone-${serverModule.provider.type}-runner-${runnerModule.type}";
     value = {
       description = "Drone CI runner instance for ${runnerModule.type} and ${serverModule.provider.type}";
 
@@ -206,7 +206,8 @@ in
       };
     };
 
-    config = mkIf cfg.enable {
+    config = mkIf cfg.enable (mkMerge [
+      {
       assertions = [
         { 
           assertion = length ( cfg.servers ) > 0;
@@ -248,5 +249,11 @@ in
           group = cfg.group;
         };
       };
-    };
-  }
+    }
+
+    (mkIf (any (it: it.type == "docker") (lists.flatten (map (it: it.runners) cfg.servers))) {
+      virtualisation.docker.enable = true;
+      users.users.${cfg.user}.extraGroups = [ "docker" ];
+    })
+  ]);
+}
