@@ -156,8 +156,8 @@ let
         let 
           createEnvFile = pkgs.writeShellScript "drone-runner-${runnerModule.type}-env" ''
             cat <<EOF | tee ${environmentFile}
-              DRONE_RPC_HOST="${serverModule.host}:${toString serverModule.port}"
-              DRONE_RPC_PROTO="${serverModule.protocol}"
+              DRONE_RPC_HOST="localhost:${toString serverModule.port}"
+              DRONE_RPC_PROTO="http"
               DRONE_RPC_SECRET="$(cat ${serverModule.rpcSecretFile})"
             EOF
             '';
