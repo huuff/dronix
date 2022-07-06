@@ -40,9 +40,11 @@ pkgs.nixosTest {
 
   testScript = ''
     gitea.wait_for_unit("drone-gitea")
+    gitea.sleep(1)
 
     with subtest("API is running"):
       gitea.succeed('[ $(curl -Lso /dev/null -w "%{http_code}" "${protocol}://${host}:${toString port}") -eq 200 ]')
+
 
     gitea.wait_for_unit("drone-gitea-runner-docker")
   '';
