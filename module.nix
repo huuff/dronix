@@ -66,6 +66,7 @@ let
 
       # TODO: One for all servers? I won't provide TLS configuration for the Drone instance,
       # I think using TLS termination is much better
+      # UPDATE: There's a mode for requesting certs automatically from let's encrypt
       protocol = mkOption {
         type = enum [ "http" "https" ];
         default = "http";
