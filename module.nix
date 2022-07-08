@@ -8,7 +8,11 @@ with lib;
 
 let
   cfg = config.servicesx.drone;
-  unitEnvFileDir = "/var/lib/drone/sysconfig";
+  unitEnvFileDir = "/etc/drone/sysconfig";
+
+  # Utility functions to make code cleaner
+  dockerRunnerExists = any (it: it.type == "docker") (lists.flatten (map (it: it.runners) cfg.servers));
+
   runnerModule = with types; submodule {
     options = {
       type = mkOption {
@@ -252,9 +256,10 @@ in
       };
     }
 
-    (mkIf (any (it: it.type == "docker") (lists.flatten (map (it: it.runners) cfg.servers))) {
+    (mkIf dockerRunnerExists {
       virtualisation.docker.enable = true;
       users.users.${cfg.user}.extraGroups = [ "docker" ];
     })
+
   ]);
 }
